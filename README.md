@@ -75,3 +75,23 @@ tmux attach -t mysession
 ```bash
 python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
 ```
+
+## Citation
+
+If you use this codebase or any part of it in your research or project, please cite:
+
+```bibtex
+@software{xu2026limx_rl_lab,
+  author = {Yiheng Xu},
+  title = {limx_rl_lab: Reinforcement Learning Codebase for the Limx Oli Robot, Based on Isaac Lab.},
+  url = {https://github.com/yhx1203/limx_rl_lab},
+  year = {2026}
+}
+```
+
+## Acknowledgements
+
+This project builds upon and benefits from the following open-source repositories:
+
+- [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
+- [unitree_rl_lab](https://github.com/unitreerobotics/unitree_rl_lab)
