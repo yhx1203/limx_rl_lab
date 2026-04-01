@@ -1,6 +1,6 @@
 robot_ip: "127.0.0.1"
-policy_path: "/home/edy/lab/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-03-31_14-19-22_flat-test-001-resume/exported/policy.pt"
-
+policy_root: "logs/rsl_rl"
+policy_path: "limx_hu_d04_01_flat_velocity_gaitphase/2026-03-31_18-48-04_flat-003/exported/policy.pt"
 update_rate: 1000
 control_decimation: 20
 parallel_solve_required: true

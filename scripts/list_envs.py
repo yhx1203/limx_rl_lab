@@ -77,7 +77,7 @@ def main():
     """Print all environments registered in `limx_rl_lab` extension."""
     # print all the available environments
     table = PrettyTable(["S. No.", "Task Name", "Entry Point", "Config"])
-    table.title = "Available Environments in Unitree RL Lab"
+    table.title = "Available Environments in Limx RL Lab"
     # set alignment of table columns
     table.align["Task Name"] = "l"
     table.align["Entry Point"] = "l"

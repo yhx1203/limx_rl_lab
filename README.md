@@ -1,4 +1,4 @@
-# limx_rl_lab
+# Limx_rl_lab
 
 ![IsaacSim](https://img.shields.io/badge/IsaacSim-5.1.0-4a4a4a)
 ![IsaacLab](https://img.shields.io/badge/IsaacLab-2.3.2-4a4a4a)
@@ -95,3 +95,5 @@ This project builds upon and benefits from the following open-source repositorie
 
 - [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
 - [unitree_rl_lab](https://github.com/unitreerobotics/unitree_rl_lab)
+- [limxdynamics](https://github.com/limxdynamics)
+

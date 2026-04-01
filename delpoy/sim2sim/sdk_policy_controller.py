@@ -88,6 +88,24 @@ def resolve_path(base_dir: Path, path_str: str) -> Path:
     return (base_dir / path).resolve()
 
 
+def resolve_policy_path(config_path: Path, policy_root: str | None, path_str: str) -> Path:
+    path = Path(path_str)
+    if path.is_absolute():
+        return path
+
+    project_root = config_path.parents[3]
+
+    if policy_root:
+        policy_root_path = Path(policy_root)
+        if not policy_root_path.is_absolute():
+            policy_root_path = (project_root / policy_root_path).resolve()
+        else:
+            policy_root_path = policy_root_path.resolve()
+        return (policy_root_path / path).resolve()
+
+    return resolve_path(config_path.parent, path_str)
+
+
 def as_float_array(value, length: int, name: str) -> np.ndarray:
     array = np.asarray(value, dtype=np.float32).reshape(-1)
     if array.size == 1:
@@ -192,7 +210,9 @@ class LimxSDKPolicyController:
         self.config_path = resolve_path(self.script_dir, args.config)
         self.config = yaml.safe_load(self.config_path.read_text())
 
-        policy_path = resolve_path(self.config_path.parent, args.policy or self.config["policy_path"])
+        policy_path = resolve_policy_path(
+            self.config_path, self.config.get("policy_root"), args.policy or self.config["policy_path"]
+        )
         self.policy = torch.jit.load(str(policy_path), map_location="cpu")
         self.policy.eval()
 

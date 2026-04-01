@@ -5,17 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "limx_rl_lab"
 version = "0.2.1"
-description = "Reinforcement Learning Lab for Unitree Robots."
+description = "Reinforcement Learning Lab for Limx Robots."
 dependencies = [
     "argcomplete",
 ]
 requires-python = ">=3.10"
 license = { text = "Apache 2.0" }
 authors = [
-    { name = "Unitree Robotics" }
+    { name = "Limx Robotics" }
 ]
 maintainers = [
-    { name = "Unitree Robotics" }
+    { name = "Limx Robotics" }
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

@@ -7,16 +7,17 @@ version = "0.1.0"
 category = "isaaclab"
 readme  = "README.md"
 
-title = "Unitree RL Lab"
-author = "Unitree Robotics"
-maintainer = "Unitree Robotics"
-description="reinforcement learning environments for Unitree robots"
-repository = "https://github.com/unitreerobotics/limx_rl_lab"
+title = "Extension Template"
+author = "Isaac Lab Project Developers"
+maintainer = "Isaac Lab Project Developers"
+description="Extension Template for Isaac Lab"
+repository = "https://github.com/isaac-sim/IsaacLab.git"
 keywords = ["extension", "template", "isaaclab"]
 
 [dependencies]
 "isaaclab" = {}
 "isaaclab_assets" = {}
+"isaaclab_mimic" = {}
 "isaaclab_rl" = {}
 "isaaclab_tasks" = {}
 # NOTE: Add additional dependencies here
@@ -24,7 +25,7 @@ keywords = ["extension", "template", "isaaclab"]
 [[python.module]]
 name = "limx_rl_lab"
 
-[isaaclab_settings]
+[isaac_lab_settings]
 # TODO: Uncomment and list any apt dependencies here.
 #       If none, leave it commented out.
 # apt_deps = ["example_package"]
