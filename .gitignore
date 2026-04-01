@@ -73,3 +73,6 @@ datasets
 
 # Mimic
 *.npz
+
+# Codex
+*.codex
