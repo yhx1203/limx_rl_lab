@@ -1,0 +1,77 @@
+# limx_rl_lab
+
+![IsaacSim](https://img.shields.io/badge/IsaacSim-5.1.0-4a4a4a)
+![IsaacLab](https://img.shields.io/badge/IsaacLab-2.3.2-4a4a4a)
+![python](https://img.shields.io/badge/python-3.11-2f86c9)
+![platform](https://img.shields.io/badge/platform-linux--64-f08a3c)
+
+## Overview
+`limx_rl_lab` is a reinforcement learning codebase built on Isaac Lab for the Limx Oli robot, developed independently from the core Isaac Lab repository.
+
+## Installation
+**Conda environment**
+```bash
+conda create -n limx_rl_lab python=3.11
+conda activate limx_rl_lab
+```
+
+**Install dependencies**
+```bash
+# Upgrade pip
+pip install --upgrade pip
+
+# Install Isaac Lab and Isaac Sim
+pip install isaaclab[isaacsim,all]==2.3.2 --extra-index-url https://pypi.nvidia.com
+
+# Install PyTorch
+pip install -U torch==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128
+```
+
+**Verify**
+```bash
+isaacsim
+```
+
+**Install limx_rl_lab**
+```bash
+cd source/limx_rl_lab
+pip install -e .
+```
+
+## Training
+
+**Local training**
+```bash
+# List available tasks
+python scripts/list_envs.py
+
+# Start training
+python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless
+
+# Resume training from the latest checkpoint
+python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless --resume
+```
+
+**Training on a server**
+```bash
+# It is recommended to log in to Weights & Biases for tracking training metrics
+export WANDB_API_KEY=your_key
+wandb login
+
+# It is recommended to use tmux so training keeps running after disconnection
+tmux new -s mysession
+
+# Run training inside tmux
+python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless --logger wandb --log_project_name limx-hu-d04-01 --run_name flat-001
+
+# Press CTRL+B, then release and press D to detach the session
+# Training will continue running in the background
+
+# Reattach to the session
+tmux attach -t mysession
+```
+
+## Evaluate
+```bash
+python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
+```
