@@ -51,6 +51,13 @@ python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless
 python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless --resume
 ```
 
+**Training Results**
+
+The following animation shows the learned policy running on flat terrain.
+
+![train_flat](docs/train_flat.gif)
+
+
 **Training on a server**
 ```bash
 # It is recommended to log in to Weights & Biases for tracking training metrics
@@ -74,6 +81,7 @@ tmux attach -t mysession
 ```bash
 python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
 ```
+
 
 
 ## Citation
