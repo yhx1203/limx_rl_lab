@@ -82,6 +82,18 @@ tmux attach -t mysession
 python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
 ```
 
+## Sim2sim (mujoco)
+
+**Preparation**
+
+```bash
+# Install the official LimX SDK in the current environment
+git clone --recurse git@github.com:limxdynamics/humanoid-mujoco-sim.git
+
+python -m pip install --force-reinstall
+humanoid-mujoco-sim/limxsdk-lowlevel/python3/amd64/limxsdk-4.0.1-py3-none-any.whl
+```
+
 
 
 ## Citation

@@ -1,0 +1,27 @@
+robot_ip: "127.0.0.1"
+robot_type: "Humanoid"
+
+abilities:
+  stand:
+    type: "stand/controller"
+    script_path: "stand_controller/stand_controller.py"
+    autostart: true
+    config: {
+      update_rate: 1000
+    }
+
+  walk:
+    type: "walk/controller"
+    script_path: "walk_controller/walk_controller.py"
+    autostart: false
+    config: {
+      update_rate: 1000
+    }
+
+  damping:
+    type: "damping/controller"
+    script_path: "damping_controller/damping_controller.py"
+    autostart: false
+    config: {
+      update_rate: 1000
+    }

@@ -1,0 +1,98 @@
+policy_root: "logs/rsl_rl"
+policy_path: "limx_hu_d04_01_flat_velocity_gaitphase/2026-03-31_18-48-04_flat-003/exported/policy.pt"
+
+cmd_init: [0.0, 0.0, 0.0]
+cmd_scale: [1.0, 1.0, 1.0]
+ang_vel_scale: 0.2
+dof_pos_scale: 1.0
+dof_vel_scale: 0.05
+
+policy_joints:
+  - left_hip_pitch_joint
+  - right_hip_pitch_joint
+  - waist_yaw_joint
+  - left_hip_roll_joint
+  - right_hip_roll_joint
+  - waist_roll_joint
+  - left_hip_yaw_joint
+  - right_hip_yaw_joint
+  - waist_pitch_joint
+  - left_knee_joint
+  - right_knee_joint
+  - head_yaw_joint
+  - left_shoulder_pitch_joint
+  - right_shoulder_pitch_joint
+  - left_ankle_pitch_joint
+  - right_ankle_pitch_joint
+  - head_pitch_joint
+  - left_shoulder_roll_joint
+  - right_shoulder_roll_joint
+  - left_ankle_roll_joint
+  - right_ankle_roll_joint
+  - left_shoulder_yaw_joint
+  - right_shoulder_yaw_joint
+  - left_elbow_joint
+  - right_elbow_joint
+  - left_wrist_yaw_joint
+  - right_wrist_yaw_joint
+  - left_wrist_pitch_joint
+  - right_wrist_pitch_joint
+  - left_wrist_roll_joint
+  - right_wrist_roll_joint
+
+HumanoidRobotCfg:
+  control:
+    action_scale: 0.25
+    decimation: 20
+    parallel_solve_required: true
+    command_warmup_s: 1.5
+    joy_deadband: 0.05
+    max_vx: 0.8
+    max_vy: 0.2
+    max_vz: 0.5
+
+    user_torque_limit:
+      [
+        140.0, 140.0, 42.0, 140.0, 140.0, 42.0, 140.0, 140.0, 42.0, 140.0,
+        140.0, 19.0, 42.0, 42.0, 42.0, 42.0, 19.0, 42.0, 42.0, 42.0,
+        42.0, 42.0, 42.0, 42.0, 42.0, 19.0, 19.0, 19.0, 19.0, 19.0,
+        19.0
+      ]
+
+    kp:
+      [
+        220.0, 220.0, 120.0, 200.0, 200.0, 90.0, 200.0, 200.0, 90.0, 240.0,
+        240.0, 20.0, 80.0, 80.0, 60.0, 60.0, 20.0, 80.0, 80.0, 60.0,
+        60.0, 70.0, 70.0, 70.0, 70.0, 30.0, 30.0, 30.0, 30.0, 30.0,
+        30.0
+      ]
+
+    kd:
+      [
+        6.0, 6.0, 3.0, 5.0, 5.0, 2.5, 5.0, 5.0, 2.5, 6.0,
+        6.0, 0.8, 2.5, 2.5, 1.5, 1.5, 0.8, 2.5, 2.5, 1.5,
+        1.5, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0
+      ]
+
+    default_angle:
+      [
+        -0.25, -0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.55,
+        0.55, 0.0, 0.1, 0.1, -0.3, -0.3, 0.0, 0.1, -0.1, 0.0,
+        0.0, -0.2, 0.2, -0.2, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0
+      ]
+
+  normalization:
+    clip_scales:
+      clip_observations: 100.0
+      clip_actions: 100.0
+    obs_scales:
+      ang_vel: 0.2
+      dof_pos: 1.0
+      dof_vel: 0.05
+
+  size:
+    actions_size: 31
+    observations_size: 104
+    gait_period: 0.72
