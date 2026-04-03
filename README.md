@@ -54,7 +54,7 @@ python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless --
 
 The following animation shows the learned policy running on flat terrain.
 
-![train_flat](docs/train_flat.gif)
+![train_flat](docs/train_flat1.gif)
 
 
 **Training on a server**
