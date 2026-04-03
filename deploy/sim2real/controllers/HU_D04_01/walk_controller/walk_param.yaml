@@ -46,6 +46,7 @@ HumanoidRobotCfg:
     decimation: 20
     parallel_solve_required: true
     command_warmup_s: 1.5
+    command_threshold: 0.1
     joy_deadband: 0.05
     max_vx: 0.8
     max_vy: 0.2

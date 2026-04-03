@@ -47,6 +47,16 @@ def apply_deadzone(value: float, deadzone: float, expo: float) -> float:
     return float(np.sign(value) * scaled)
 
 
+def slew_limit_vector(current: np.ndarray, target: np.ndarray, rise_rate: np.ndarray, fall_rate: np.ndarray, dt: float) -> np.ndarray:
+    delta = target - current
+    same_direction = current * target >= 0.0
+    growing = np.abs(target) > np.abs(current)
+    use_rise = same_direction & growing
+    rate = np.where(use_rise, rise_rate, fall_rate)
+    max_delta = rate * max(dt, 1e-6)
+    return current + np.clip(delta, -max_delta, max_delta)
+
+
 class GamepadTeleop:
     def __init__(self, args):
         self.controller_index = args.controller_index
@@ -188,15 +198,26 @@ class GamepadPolicyController(LimxSDKPolicyController):
     def __init__(self, args):
         super().__init__(args)
         self.cmd = np.zeros(3, dtype=np.float32)
+        self.target_cmd = np.zeros(3, dtype=np.float32)
         self.teleop = GamepadTeleop(args)
+        self.command_rise_rate = np.array(
+            [args.command_rise_rate_x, args.command_rise_rate_y, args.command_rise_rate_z], dtype=np.float32
+        )
+        self.command_fall_rate = np.array(
+            [args.command_fall_rate_x, args.command_fall_rate_y, args.command_fall_rate_z], dtype=np.float32
+        )
 
     def run(self):
         self.wait_for_first_state()
         rate = Rate(self.update_rate)
         t0 = time.perf_counter()
+        dt = 1.0 / float(self.update_rate)
 
         while True:
-            self.cmd = self.teleop.read_command()
+            self.target_cmd = self.teleop.read_command()
+            self.cmd = slew_limit_vector(
+                self.cmd, self.target_cmd, self.command_rise_rate, self.command_fall_rate, dt
+            )
 
             robot_state = copy.deepcopy(self.io.robot_state)
             imu_data = copy.deepcopy(self.io.imu_data)
@@ -215,7 +236,8 @@ class GamepadPolicyController(LimxSDKPolicyController):
                 controller_name = self.teleop.controller.name if self.teleop.controller is not None else "none"
                 print(
                     f"[gamepad-sim2sim] fps={fps:.1f} state={state} controller={controller_name} "
-                    f"cmd=({self.cmd[0]:+.2f}, {self.cmd[1]:+.2f}, {self.cmd[2]:+.2f})",
+                    f"cmd=({self.cmd[0]:+.2f}, {self.cmd[1]:+.2f}, {self.cmd[2]:+.2f}) "
+                    f"target=({self.target_cmd[0]:+.2f}, {self.target_cmd[1]:+.2f}, {self.target_cmd[2]:+.2f})",
                     end="\r",
                 )
             rate.sleep()
@@ -305,6 +327,42 @@ def parse_args():
         type=float,
         default=1.0,
         help="How often to retry controller connection when disconnected.",
+    )
+    parser.add_argument(
+        "--command-rise-rate-x",
+        type=float,
+        default=1.6,
+        help="Forward command rise-rate limit in m/s^2 for policy input shaping.",
+    )
+    parser.add_argument(
+        "--command-rise-rate-y",
+        type=float,
+        default=1.0,
+        help="Lateral command rise-rate limit in m/s^2 for policy input shaping.",
+    )
+    parser.add_argument(
+        "--command-rise-rate-z",
+        type=float,
+        default=2.0,
+        help="Yaw command rise-rate limit in rad/s^2 for policy input shaping.",
+    )
+    parser.add_argument(
+        "--command-fall-rate-x",
+        type=float,
+        default=0.7,
+        help="Forward command fall-rate limit in m/s^2 to avoid abrupt stop-induced pitching.",
+    )
+    parser.add_argument(
+        "--command-fall-rate-y",
+        type=float,
+        default=0.9,
+        help="Lateral command fall-rate limit in m/s^2 for policy input shaping.",
+    )
+    parser.add_argument(
+        "--command-fall-rate-z",
+        type=float,
+        default=1.5,
+        help="Yaw command fall-rate limit in rad/s^2 for policy input shaping.",
     )
     return parser.parse_args()
 

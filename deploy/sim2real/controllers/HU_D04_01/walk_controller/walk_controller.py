@@ -112,7 +112,10 @@ def load_training_deploy_overrides(policy_path: Path, num_actions: int, update_r
 
     gait_phase_cfg = deploy_cfg.get("observations", {}).get("gait_phase")
     if gait_phase_cfg is not None:
-        overrides["gait_period"] = float(gait_phase_cfg.get("params", {}).get("period", 0.0))
+        gait_phase_params = gait_phase_cfg.get("params", {})
+        overrides["gait_period"] = float(gait_phase_params.get("period", 0.0))
+        if "command_threshold" in gait_phase_params:
+            overrides["command_threshold"] = float(gait_phase_params["command_threshold"])
 
     command_ranges = deploy_cfg.get("commands", {}).get("base_velocity", {}).get("ranges")
     if command_ranges is not None:
@@ -129,7 +132,11 @@ def get_projected_gravity(quat_wxyz) -> np.ndarray:
     return rotation.inv().apply(gravity_world).astype(np.float32)
 
 
-def get_gait_phase(sim_time: float, period: float) -> np.ndarray:
+def get_gait_phase(
+    sim_time: float, period: float, cmd: np.ndarray | None = None, command_threshold: float = 0.1
+) -> np.ndarray:
+    if cmd is not None and np.linalg.norm(cmd) < command_threshold:
+        return np.array([0.0, 1.0], dtype=np.float32)
     phase = 2.0 * np.pi * (sim_time % period) / max(period, 1e-6)
     return np.array([np.sin(phase), np.cos(phase)], dtype=np.float32)
 
@@ -232,6 +239,9 @@ class WalkController(BaseAbility):
         self.gait_period = float(
             deploy_overrides.get("gait_period", size_cfg.get("gait_period", self.walking_param.get("gait_period", 0.72)))
         )
+        self.command_threshold = float(
+            deploy_overrides.get("command_threshold", config.get("command_threshold", control_cfg.get("command_threshold", 0.1)))
+        )
         self.parallel_solve_required = bool(
             config.get("parallel_solve_required", control_cfg.get("parallel_solve_required", True))
         )
@@ -306,7 +316,9 @@ class WalkController(BaseAbility):
         obs[9 : 9 + self.num_actions] = (joint_pos - self.default_angles) * self.dof_pos_scale
         obs[9 + self.num_actions : 9 + 2 * self.num_actions] = joint_vel * self.dof_vel_scale
         obs[9 + 2 * self.num_actions : 9 + 3 * self.num_actions] = self.last_action
-        obs[9 + 3 * self.num_actions : 9 + 3 * self.num_actions + 2] = get_gait_phase(sim_time, self.gait_period)
+        obs[9 + 3 * self.num_actions : 9 + 3 * self.num_actions + 2] = get_gait_phase(
+            sim_time, self.gait_period, self.current_cmd, self.command_threshold
+        )
         return np.clip(obs, -self.clip_observations, self.clip_observations)
 
     def compute_action(self, obs: np.ndarray) -> np.ndarray:

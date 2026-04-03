@@ -166,7 +166,10 @@ def load_training_deploy_overrides(policy_path: Path, num_actions: int, update_r
 
     gait_phase_cfg = deploy_cfg.get("observations", {}).get("gait_phase")
     if gait_phase_cfg is not None:
-        overrides["gait_period"] = float(gait_phase_cfg.get("params", {}).get("period", 0.0))
+        gait_phase_params = gait_phase_cfg.get("params", {})
+        overrides["gait_period"] = float(gait_phase_params.get("period", 0.0))
+        if "command_threshold" in gait_phase_params:
+            overrides["command_threshold"] = float(gait_phase_params["command_threshold"])
 
     overrides["deploy_path"] = deploy_path
     return overrides
@@ -179,7 +182,9 @@ def get_projected_gravity(quat_wxyz):
     return rotation.inv().apply(gravity_world).astype(np.float32)
 
 
-def get_gait_phase(sim_time, period):
+def get_gait_phase(sim_time, period, cmd=None, command_threshold=0.1):
+    if cmd is not None and np.linalg.norm(cmd) < command_threshold:
+        return np.array([0.0, 1.0], dtype=np.float32)
     phase = 2.0 * np.pi * (sim_time % period) / period
     return np.array([np.sin(phase), np.cos(phase)], dtype=np.float32)
 
@@ -218,11 +223,16 @@ class LimxSDKPolicyController:
 
         self.num_actions = int(self.config["num_actions"])
         self.num_obs = int(self.config["num_obs"])
-        deploy_overrides = load_training_deploy_overrides(
-            policy_path=policy_path, num_actions=self.num_actions, update_rate=int(self.config["update_rate"])
-        )
-        if "deploy_path" in deploy_overrides:
-            print(f"[sdk-sim2sim] loaded training parameters from {deploy_overrides['deploy_path']}")
+        self.use_training_deploy_overrides = bool(self.config.get("use_training_deploy_overrides", False))
+        deploy_overrides = {}
+        if self.use_training_deploy_overrides:
+            deploy_overrides = load_training_deploy_overrides(
+                policy_path=policy_path, num_actions=self.num_actions, update_rate=int(self.config["update_rate"])
+            )
+            if "deploy_path" in deploy_overrides:
+                print(f"[sdk-sim2sim] loaded training parameters from {deploy_overrides['deploy_path']}")
+        else:
+            print("[sdk-sim2sim] using repository sim2sim config; training deploy.yaml overrides disabled.")
 
         self.policy_joints = self.config["policy_joints"]
         self.policy_joint_index = {name: idx for idx, name in enumerate(self.policy_joints)}
@@ -234,6 +244,9 @@ class LimxSDKPolicyController:
         self.action_scale = as_float_array(
             deploy_overrides.get("action_scale", self.config["action_scale"]), self.num_actions, "action_scale"
         )
+        self.user_torque_limit = as_float_array(
+            self.config["user_torque_limit"], self.num_actions, "user_torque_limit"
+        )
         self.ang_vel_scale = float(self.config["ang_vel_scale"])
         self.dof_pos_scale = float(self.config["dof_pos_scale"])
         self.dof_vel_scale = float(self.config["dof_vel_scale"])
@@ -241,6 +254,7 @@ class LimxSDKPolicyController:
         self.control_decimation = int(deploy_overrides.get("control_decimation", self.config["control_decimation"]))
         self.update_rate = int(self.config["update_rate"])
         self.gait_period = float(deploy_overrides.get("gait_period", self.config["gait_period"]))
+        self.command_threshold = float(deploy_overrides.get("command_threshold", self.config.get("command_threshold", 0.1)))
         self.command_warmup_s = float(self.config.get("command_warmup_s", 0.0))
         self.parallel_solve_required = bool(self.config.get("parallel_solve_required", True))
 
@@ -294,7 +308,9 @@ class LimxSDKPolicyController:
         obs[9 : 9 + self.num_actions] = (joint_pos - self.default_angles) * self.dof_pos_scale
         obs[9 + self.num_actions : 9 + 2 * self.num_actions] = joint_vel * self.dof_vel_scale
         obs[9 + 2 * self.num_actions : 9 + 3 * self.num_actions] = self.last_action
-        obs[9 + 3 * self.num_actions : 9 + 3 * self.num_actions + 2] = get_gait_phase(sim_time, self.gait_period)
+        obs[9 + 3 * self.num_actions : 9 + 3 * self.num_actions + 2] = get_gait_phase(
+            sim_time, self.gait_period, current_cmd, self.command_threshold
+        )
         return obs
 
     def compute_action(self, obs):
@@ -304,14 +320,27 @@ class LimxSDKPolicyController:
         return action
 
     def publish_command(self, robot_state):
-        desired_q_policy = self.last_action * self.action_scale + self.default_angles
         motor_names = list(robot_state.motor_names)
         motor_count = len(motor_names)
+        joint_pos = np.asarray(robot_state.q, dtype=np.float32)[self.robot_order_index]
+        joint_vel = np.asarray(robot_state.dq, dtype=np.float32)[self.robot_order_index]
+        safe_scale = np.maximum(self.action_scale, 1e-6)
+        safe_kp = np.maximum(self.kps, 1e-6)
+        soft_torque_limit = 0.95
+
+        action_min = joint_pos - self.default_angles + (
+            self.kds * joint_vel - self.user_torque_limit * soft_torque_limit
+        ) / safe_kp
+        action_max = joint_pos - self.default_angles + (
+            self.kds * joint_vel + self.user_torque_limit * soft_torque_limit
+        ) / safe_kp
+        limited_action = np.clip(self.last_action, action_min / safe_scale, action_max / safe_scale)
+        desired_q_policy = limited_action * self.action_scale + self.default_angles
 
         cmd_msg = datatypes.RobotCmd()
         cmd_msg.stamp = time.time_ns()
         cmd_msg.mode = [0 for _ in range(motor_count)]
-        cmd_msg.q = [0.0 for _ in range(motor_count)]
+        cmd_msg.q = [float(x) for x in robot_state.q]
         cmd_msg.dq = [0.0 for _ in range(motor_count)]
         cmd_msg.tau = [0.0 for _ in range(motor_count)]
         cmd_msg.Kp = [0.0 for _ in range(motor_count)]
