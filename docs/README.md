@@ -81,6 +81,44 @@ tmux attach -t mysession
 python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
 ```
 
+## Sim2sim (mujoco)
+
+**Preparation**
+
+```bash
+# Install the official LimX SDK in the current environment
+git clone --recurse git@github.com:limxdynamics/humanoid-mujoco-sim.git
+
+python -m pip install --force-reinstall
+humanoid-mujoco-sim/limxsdk-lowlevel/python3/amd64/limxsdk-4.0.1-py3-none-any.whl
+```
+
+**Launch the MuJoCo simulator**
+```bash
+cd ~/limx_ws
+export ROBOT_TYPE=HU_D04_01
+python humanoid-mujoco-sim/simulator.py
+```
+
+**Run in another terminal**
+```bash
+python deploy/sim2sim/sdk_policy_controller.py --policy your_policy
+
+python deploy/sim2sim/sdk_policy_controller.py --policy limx_hu_d04_01_flat_velocity_gaitphase/2026-03-31_18-48-04_flat-003/exported/policy.pt
+
+# Use a gamepad for control
+python deploy/sim2sim/gamepad_policy_controller.py --policy your_policy
+
+python deploy/sim2sim/gamepad_policy_controller.py --policy limx_hu_d04_01_flat_velocity_gaitphase/2026-03-31_18-48-04_flat-003/exported/policy.pt
+```
+
+### Default Controller Mapping
+
+- Left stick：`vx / vy`
+- Right stick：`wz`
+- `START`：enable / pause 
+- `BACK`：immediately pause and reset the velocity command to zero
+
 ## Citation
 
 If you use this codebase or any part of it in your research or project, please cite:

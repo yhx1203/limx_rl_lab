@@ -188,7 +188,10 @@ class ObservationsCfg:
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05, noise=Unoise(n_min=-1.5, n_max=1.5))
         last_action = ObsTerm(func=mdp.last_action)
-        gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.72})
+        gait_phase = ObsTerm(
+            func=mdp.gait_phase,
+            params={"period": 0.72, "command_name": "base_velocity", "command_threshold": 0.1},
+        )
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -208,7 +211,10 @@ class ObservationsCfg:
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05)
         joint_effort = ObsTerm(func=mdp.joint_effort, scale=0.01)
         last_action = ObsTerm(func=mdp.last_action)
-        gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.72})
+        gait_phase = ObsTerm(
+            func=mdp.gait_phase,
+            params={"period": 0.72, "command_name": "base_velocity", "command_threshold": 0.1},
+        )
 
     critic: CriticCfg = CriticCfg()
 
@@ -256,8 +262,18 @@ class RewardsCfg:
     )
     joint_deviation_arm_swing = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.01, #-0.03
+        weight=-0.03, 
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_shoulder_pitch_joint"])},
+    )
+    cross_arm_swing_stance = RewTerm(
+        func=mdp.cross_arm_swing_stance,
+        weight=0.25,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=["left_wrist_roll_link", "right_wrist_roll_link"]),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET_BODY_NAMES),
+            "command_name": "base_velocity",
+            "position_scale": 8.0,
+        },
     )
     joint_deviation_wrists = RewTerm(
         func=mdp.joint_deviation_l1,
@@ -279,6 +295,11 @@ class RewardsCfg:
         weight=-0.5,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_hip_roll_joint", ".*_hip_yaw_joint"])},
     )
+    stand_still = RewTerm(
+        func=mdp.stand_still,
+        weight=-0.1,
+        params={"command_name": "base_velocity", "command_threshold": 0.1},
+    )
 
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-8.0)#-5.0
     base_height = RewTerm(func=mdp.base_height_l2, weight=-10.0, params={"target_height": 0.9})
@@ -291,7 +312,17 @@ class RewardsCfg:
             "offset": [0.0, 0.5],
             "threshold": 0.55,
             "command_name": "base_velocity",
+            "command_threshold": 0.1,
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET_BODY_NAMES),
+        },
+    )
+    feet_contact_without_cmd = RewTerm(
+        func=mdp.feet_contact_without_cmd,
+        weight=0.5,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET_BODY_NAMES),
+            "command_name": "base_velocity",
+            "command_threshold": 0.1,
         },
     )
     feet_slide = RewTerm(

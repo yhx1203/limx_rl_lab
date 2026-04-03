@@ -29,13 +29,16 @@ def energy(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("r
 
 
 def stand_still(
-    env: ManagerBasedRLEnv, command_name: str = "base_velocity", asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    env: ManagerBasedRLEnv,
+    command_name: str = "base_velocity",
+    command_threshold: float = 0.1,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     asset: Articulation = env.scene[asset_cfg.name]
 
     reward = torch.sum(torch.abs(asset.data.joint_pos - asset.data.default_joint_pos), dim=1)
     cmd_norm = torch.norm(env.command_manager.get_command(command_name), dim=1)
-    return reward * (cmd_norm < 0.1)
+    return reward * (cmd_norm < command_threshold)
 
 
 """
@@ -138,7 +141,10 @@ def feet_too_near(
 
 
 def feet_contact_without_cmd(
-    env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg, command_name: str = "base_velocity"
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg,
+    command_name: str = "base_velocity",
+    command_threshold: float = 0.1,
 ) -> torch.Tensor:
     """
     Reward for feet contact when the command is zero.
@@ -149,7 +155,40 @@ def feet_contact_without_cmd(
 
     command_norm = torch.norm(env.command_manager.get_command(command_name), dim=1)
     reward = torch.sum(is_contact, dim=-1).float()
-    return reward * (command_norm < 0.1)
+    return reward * (command_norm < command_threshold)
+
+
+def cross_arm_swing_stance(
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg,
+    asset_cfg: SceneEntityCfg,
+    command_name: str = "base_velocity",
+    command_threshold: float = 0.1,
+    position_scale: float = 8.0,
+) -> torch.Tensor:
+    """Reward contralateral arm swing relative to the body frame."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+
+    is_contact = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids] > 0
+    stance_diff = is_contact[:, 0].float() - is_contact[:, 1].float()
+
+    hand_pos_rel_w = asset.data.body_pos_w[:, asset_cfg.body_ids, :] - asset.data.root_pos_w[:, None, :]
+    hand_pos_b = torch.zeros(env.num_envs, len(asset_cfg.body_ids), 3, device=env.device)
+    for i in range(len(asset_cfg.body_ids)):
+        hand_pos_b[:, i, :] = quat_apply_inverse(asset.data.root_quat_w, hand_pos_rel_w[:, i, :])
+
+    left_hand_x = hand_pos_b[:, 0, 0]
+    right_hand_x = hand_pos_b[:, 1, 0]
+
+    # left stance  -> right hand forward, left hand backward
+    # right stance -> left hand forward, right hand backward
+    reward_right_hand = torch.tanh(position_scale * stance_diff * right_hand_x)
+    reward_left_hand = torch.tanh(-position_scale * stance_diff * left_hand_x)
+    reward = 0.5 * (reward_right_hand + reward_left_hand)
+
+    cmd_norm = torch.norm(env.command_manager.get_command(command_name), dim=1)
+    return reward * (cmd_norm > command_threshold)
 
 
 def air_time_variance_penalty(env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
@@ -178,6 +217,7 @@ def feet_gait(
     sensor_cfg: SceneEntityCfg,
     threshold: float = 0.5,
     command_name=None,
+    command_threshold: float = 0.1,
 ) -> torch.Tensor:
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
     is_contact = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids] > 0
@@ -196,7 +236,7 @@ def feet_gait(
 
     if command_name is not None:
         cmd_norm = torch.norm(env.command_manager.get_command(command_name), dim=1)
-        reward *= cmd_norm > 0.1
+        reward *= cmd_norm > command_threshold
     return reward
 
 
