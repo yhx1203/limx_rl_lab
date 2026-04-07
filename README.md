@@ -119,6 +119,47 @@ The following animation shows the learned policy running in MuJoCo on flat terra
 - `START`：enable / pause 
 - `BACK`：immediately pause and reset the velocity command to zero
 
+## Sim2real 
+
+**Preparation**
+
+Power on the robot
+
+Connect to the Wi-Fi network `HU_D04_xx_xxx_5G`  
+Password: `12345678`
+
+```bash
+# Check whether the connection is successful
+ping 10.192.1.2
+```
+Enter the developer low-level control mode as shown in the image below.
+![control_method](docs/control_method.png)
+
+```bash
+# Replace with your own policy
+export LIMX_POLICY_ROOT=/home/edy/limx_rl_lab/logs/rsl_rl
+export LIMX_WALK_POLICY=limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt
+```
+
+**Run**
+
+```bash
+cd /home/edy/limx_rl_lab
+export ROBOT_TYPE=HU_D04_01
+python deploy/sim2real/main.py 10.192.1.2
+```
+**Controller switching**
+
+- `L1 + Y`: switch to `stand`
+- `R1 + X`: switch to `walk`
+- `L1 + A`: switch to `damping`
+
+The following animation shows the learned policy running in reality.
+
+![train_flat_real](docs/train_flat_real.gif)
+
+
+
 ## Citation
 
 If you use this codebase or any part of it in your research or project, please cite:
