@@ -34,3 +34,8 @@ class BasePPORunnerCfg(RslRlOnPolicyRunnerCfg):
         desired_kl=0.01,
         max_grad_norm=1.0,
     )
+
+
+@configclass
+class RoughPPORunnerCfg(BasePPORunnerCfg):
+    obs_groups = {"actor": ["policy"], "critic": ["critic"]}
