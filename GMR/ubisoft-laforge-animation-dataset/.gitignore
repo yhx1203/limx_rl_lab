@@ -1,0 +1,8 @@
+
+.vscode/
+
+output/
+
+*.pyc
+
+.DS_Store

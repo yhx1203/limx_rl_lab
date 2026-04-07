@@ -158,6 +158,33 @@ The following animation shows the learned policy running in reality.
 
 ![train_flat_real](docs/train_flat_real.gif)
 
+## GMR
+**Install GMR**
+```bash
+cd GMR
+pip install -e .  
+```
+
+**Download the LAFAN1 dataset**
+```bash
+git clone https://github.com/ubisoft/ubisoft-laforge-animation-dataset.git  
+```
+
+**View the retargeted motion**
+```bash
+python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/aiming1_subject1.bvh   --format lafan1   --robot hu_d04  
+```
+
+The following animation shows the retargeted motion running in mujoco.
+
+![retarget_mujoco](docs/retarget_mujoco.gif)
+
+**Retarget the motion and save it in CSV format (for BeyondMimic training)**
+```bash
+python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/aiming1_subject1.bvh   --format lafan1   --robot hu_d04   --no_viewer   --max_frames 300   --save_beyondmimic_csv_path outputs/hu_d04_aiming1_preview_beyondmimic.csv
+```
+
+
 
 
 ## Citation
@@ -180,5 +207,7 @@ This project builds upon and benefits from the following open-source repositorie
 - [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
 - [unitree_rl_lab](https://github.com/unitreerobotics/unitree_rl_lab)
 - [limxdynamics](https://github.com/limxdynamics)
+- [GMR](https://github.com/YanjieZe/GMR.git)
+
 
 
