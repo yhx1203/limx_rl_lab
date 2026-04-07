@@ -185,6 +185,7 @@ def get_projected_gravity(quat_wxyz):
 def get_gait_phase(sim_time, period, cmd=None, command_threshold=0.1):
     if cmd is not None and np.linalg.norm(cmd) < command_threshold:
         return np.array([0.0, 1.0], dtype=np.float32)
+    period = max(period, 1e-6)
     phase = 2.0 * np.pi * (sim_time % period) / period
     return np.array([np.sin(phase), np.cos(phase)], dtype=np.float32)
 
@@ -218,6 +219,15 @@ class LimxSDKPolicyController:
         policy_path = resolve_policy_path(
             self.config_path, self.config.get("policy_root"), args.policy or self.config["policy_path"]
         )
+        if not policy_path.exists():
+            raise FileNotFoundError(f"Policy file not found: {policy_path}")
+
+        try:
+            torch.set_num_threads(1)
+            torch.set_num_interop_threads(1)
+        except RuntimeError:
+            pass
+
         self.policy = torch.jit.load(str(policy_path), map_location="cpu")
         self.policy.eval()
 
@@ -257,6 +267,8 @@ class LimxSDKPolicyController:
         self.command_threshold = float(deploy_overrides.get("command_threshold", self.config.get("command_threshold", 0.1)))
         self.command_warmup_s = float(self.config.get("command_warmup_s", 0.0))
         self.parallel_solve_required = bool(self.config.get("parallel_solve_required", True))
+        self.clip_observations = float(self.config.get("clip_observations", 100.0))
+        self.clip_actions = float(self.config.get("clip_actions", 100.0))
 
         self.cmd = np.array(self.config["cmd_init"], dtype=np.float32)
         if args.lin_vel_x is not None:
@@ -311,13 +323,16 @@ class LimxSDKPolicyController:
         obs[9 + 3 * self.num_actions : 9 + 3 * self.num_actions + 2] = get_gait_phase(
             sim_time, self.gait_period, current_cmd, self.command_threshold
         )
-        return obs
+        return np.clip(obs, -self.clip_observations, self.clip_observations)
 
     def compute_action(self, obs):
         with torch.inference_mode():
             obs_tensor = torch.from_numpy(obs).unsqueeze(0)
-            action = self.policy(obs_tensor).detach().cpu().numpy().squeeze().astype(np.float32)
-        return action
+            action = self.policy(obs_tensor)
+            if isinstance(action, (tuple, list)):
+                action = action[0]
+            action = action.detach().cpu().numpy().squeeze().astype(np.float32)
+        return np.clip(action, -self.clip_actions, self.clip_actions)
 
     def publish_command(self, robot_state):
         motor_names = list(robot_state.motor_names)

@@ -75,8 +75,49 @@ python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
 ```
 The following animation shows the learned policy running on flat terrain.
 
-![train_flat](docs/train_flat1.gif)
+![train_flat_lab](docs/train_flat_lab.gif)
 
+## Sim2sim (mujoco)
+
+**Preparation**
+
+```bash
+# Install the official LimX SDK in the current environment
+git clone --recurse git@github.com:limxdynamics/humanoid-mujoco-sim.git
+
+python -m pip install --force-reinstall
+humanoid-mujoco-sim/limxsdk-lowlevel/python3/amd64/limxsdk-4.0.1-py3-none-any.whl
+```
+
+**Launch the MuJoCo simulator**
+```bash
+cd ~/limx_ws
+export ROBOT_TYPE=HU_D04_01
+python humanoid-mujoco-sim/simulator.py
+```
+
+**Run in another terminal**
+```bash
+python deploy/sim2sim/sdk_policy_controller.py --policy your_policy
+
+python deploy/sim2sim/sdk_policy_controller.py --policy /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt
+
+# Use a gamepad for control
+python deploy/sim2sim/gamepad_policy_controller.py --policy your_policy
+
+python deploy/sim2sim/gamepad_policy_controller.py --policy /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt
+```
+
+The following animation shows the learned policy running in MuJoCo on flat terrain.
+
+![train_flat_mujoco](docs/train_flat_mujoco.gif)
+
+### Default Controller Mapping
+
+- Left stick：`vx / vy`
+- Right stick：`wz`
+- `START`：enable / pause 
+- `BACK`：immediately pause and reset the velocity command to zero
 
 ## Citation
 
@@ -98,4 +139,5 @@ This project builds upon and benefits from the following open-source repositorie
 - [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
 - [unitree_rl_lab](https://github.com/unitreerobotics/unitree_rl_lab)
 - [limxdynamics](https://github.com/limxdynamics)
+
 
