@@ -186,49 +186,36 @@ The following animation shows the retargeted motion running in mujoco.
 python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/aiming1_subject1.bvh   --format lafan1   --robot hu_d04   --no_viewer   --max_frames 300   --save_beyondmimic_csv_path outputs/hu_d04_aiming1_preview_beyondmimic.csv
 ```
 
+
+
+## Beyondmimic
+
 **Convert the BeyondMimic CSV to motion npz**
 
-This saves `motions/hu_d04_aiming1_preview_beyondmimic/motion.npz` locally and, unless `--skip_wandb` is used, links it to `wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic`.
-
 ```bash
-python scripts/csv_to_npz.py \
-  --robot oli \
-  --input_file GMR/outputs/hu_d04_aiming1_preview_beyondmimic.csv \
-  --input_fps 30 \
-  --output_name hu_d04_aiming1_preview_beyondmimic \
-  --headless
+ python scripts/csv_to_npz.py   --robot oli   --input_file GMR/outputs/hu_d04_aiming1_preview_beyondmimic.csv   --input_fps 30   --output_name hu_d04_aiming1_preview_beyondmimic   --headless
+
 ```
 
-**Replay from a Weights & Biases motion artifact**
+**Replay**
 
 ```bash
-python scripts/replay_npz.py \
-  --robot oli \
-  --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic
+ python scripts/replay_npz.py   --robot oli   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic
+
 ```
 
-**Train from a Weights & Biases motion artifact**
+**Train**
 
 ```bash
-python scripts/rsl_rl/train.py \
-  --task=LimX-HU-D04-01-Flat-BeyondMimic \
-  --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic \
-  --headless \
-  --logger wandb \
-  --log_project_name test_tmp \
-  --run_name oli_aiming1
+python scripts/rsl_rl/train.py   --task=LimX-HU-D04-01-Flat-BeyondMimic   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic   --headless   --logger wandb   --log_project_name test_tmp   --run_name oli_aiming1
+
 ```
 
-**Evaluate a BeyondMimic policy**
+**Evaluate**
 ```bash
 python scripts/rsl_rl/play.py --task=LimX-HU-D04-01-Flat-BeyondMimic --num_envs=2 --wandb_path=1155249297-the-chinese-university-of-hong-kong/test_tmp/v5xnw1aa
-# wandb卡的话就本地
-python scripts/rsl_rl/play.py \
-  --task=LimX-HU-D04-01-Flat-BeyondMimic \
-  --num_envs=2 \
-  --checkpoint /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_beyondmimic/2026-04-08_14-47-58_oli_aiming1/model_7000.pt\
-  --motion_file /home/edy/limx_rl_lab/motions/hu_d04_aiming1_preview_beyondmimic/motion.npz
-
+# use local mode
+python scripts/rsl_rl/play.py   --task=LimX-HU-D04-01-Flat-BeyondMimic   --num_envs=2   --checkpoint /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_beyondmimic/2026-04-08_14-47-58_oli_aiming1/model_7000.pt  --motion_file /home/edy/limx_rl_lab/motions/hu_d04_aiming1_preview_beyondmimic/motion.npz
 ```
 
 ## Citation
