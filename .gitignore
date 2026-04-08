@@ -74,5 +74,11 @@ datasets
 # Mimic
 *.npz
 
+# LimX robot assets required at runtime
+!source/limx_rl_lab/data/Robots/limx/HU_D04_description/**/*.usd
+!source/limx_rl_lab/data/Robots/limx/HU_D04_description/**/*.STL
+!GMR/assets/HU_D04_description/**/*.usd
+!GMR/assets/HU_D04_description/**/*.STL
+
 # Codex
 .codex
