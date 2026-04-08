@@ -58,7 +58,7 @@ def _walk_packages(
 
 def import_packages():
     sys.path.insert(0, f"{pathlib.Path(__file__).parent.parent}/source/limx_rl_lab/limx_rl_lab/tasks/")
-    for package in ["locomotion.robots"]:
+    for package in ["locomotion.robots", "beyondmimic.robots"]:
         package = importlib.import_module(package)
         for _ in _walk_packages(package.__path__, package.__name__ + "."):
             pass
@@ -90,6 +90,7 @@ def main():
         env_cfg_entry_point = str(task_spec.kwargs.get("env_cfg_entry_point", ""))
         is_local_limx_rl_lab_task = (
             env_cfg_entry_point.startswith("locomotion.")
+            or env_cfg_entry_point.startswith("beyondmimic.")
             or "limx_rl_lab.tasks" in env_cfg_entry_point
         )
         if is_local_limx_rl_lab_task and "Isaac" not in task_spec.id:

@@ -14,6 +14,7 @@ from isaaclab.app import AppLauncher
 
 # local imports
 import cli_args  # isort: skip
+import motion_args  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
@@ -30,6 +31,8 @@ parser.add_argument(
     help="Use the pre-trained checkpoint from Nucleus.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument("--wandb_path", type=str, default=None, help="Weights & Biases run path or model file path.")
+motion_args.add_motion_args(parser)
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -48,6 +51,8 @@ simulation_app = app_launcher.app
 import gymnasium as gym
 import os
 import time
+import pathlib
+
 import torch
 
 from rsl_rl.runners import OnPolicyRunner
@@ -78,26 +83,62 @@ def main():
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
     log_root_path = os.path.abspath(log_root_path)
-    print(f"[INFO] Loading experiment from directory: {log_root_path}")
-    if args_cli.use_pretrained_checkpoint:
-        try:
-            from isaaclab_rl.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
-        except ModuleNotFoundError:
-            try:
-                from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
-            except ModuleNotFoundError as exc:
-                raise ModuleNotFoundError(
-                    "This IsaacLab installation does not provide pretrained checkpoint utilities. "
-                    "Run play without --use_pretrained_checkpoint, or use a local checkpoint via --checkpoint."
-                ) from exc
-        resume_path = get_published_pretrained_checkpoint("rsl_rl", args_cli.task)
-        if not resume_path:
-            print("[INFO] Unfortunately a pre-trained checkpoint is currently unavailable for this task.")
-            return
-    elif args_cli.checkpoint:
-        resume_path = retrieve_file_path(args_cli.checkpoint)
+    if args_cli.wandb_path:
+        import wandb
+
+        run_path = args_cli.wandb_path
+
+        api = wandb.Api()
+        if "model" in args_cli.wandb_path:
+            run_path = "/".join(args_cli.wandb_path.split("/")[:-1])
+        wandb_run = api.run(run_path)
+        # loop over files in the run
+        files = [file.name for file in wandb_run.files() if "model" in file.name]
+        # files are all model_xxx.pt find the largest filename
+        if "model" in args_cli.wandb_path:
+            file = args_cli.wandb_path.split("/")[-1]
+        else:
+            file = max(files, key=lambda x: int(x.split("_")[1].split(".")[0]))
+
+        wandb_file = wandb_run.file(str(file))
+        wandb_file.download("./logs/rsl_rl/temp", replace=True)
+
+        print(f"[INFO]: Loading model checkpoint from: {run_path}/{file}")
+        resume_path = f"./logs/rsl_rl/temp/{file}"
+
+        if args_cli.motion_file is not None:
+            print(f"[INFO]: Using motion file from CLI: {args_cli.motion_file}")
+            env_cfg.commands.motion.motion_file = args_cli.motion_file
+
+        art = next((a for a in wandb_run.used_artifacts() if a.type == "motions"), None)
+        if art is None:
+            print("[WARN] No model artifact found in the run.")
+        else:
+            env_cfg.commands.motion.motion_file = str(pathlib.Path(art.download()) / "motion.npz")
     else:
-        resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+        print(f"[INFO] Loading experiment from directory: {log_root_path}")
+        motion_file = motion_args.apply_motion_source_cfg(env_cfg, args_cli)
+        if motion_file is not None:
+            print(f"[INFO]: Using motion file: {motion_file}")
+        if args_cli.use_pretrained_checkpoint:
+            try:
+                from isaaclab_rl.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+            except ModuleNotFoundError:
+                try:
+                    from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+                except ModuleNotFoundError as exc:
+                    raise ModuleNotFoundError(
+                        "This IsaacLab installation does not provide pretrained checkpoint utilities. "
+                        "Run play without --use_pretrained_checkpoint, or use a local checkpoint via --checkpoint."
+                    ) from exc
+            resume_path = get_published_pretrained_checkpoint("rsl_rl", args_cli.task)
+            if not resume_path:
+                print("[INFO] Unfortunately a pre-trained checkpoint is currently unavailable for this task.")
+                return
+        elif args_cli.checkpoint:
+            resume_path = retrieve_file_path(args_cli.checkpoint)
+        else:
+            resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
 
     log_dir = os.path.dirname(resume_path)
 

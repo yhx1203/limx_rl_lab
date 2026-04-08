@@ -22,6 +22,7 @@ for task_spec in gym.registry.values():
     env_cfg_entry_point = str(task_spec.kwargs.get("env_cfg_entry_point", ""))
     is_local_limx_rl_lab_task = (
         env_cfg_entry_point.startswith("locomotion.")
+        or env_cfg_entry_point.startswith("beyondmimic.")
         or "limx_rl_lab.tasks" in env_cfg_entry_point
     )
     if is_local_limx_rl_lab_task and "Isaac" not in task_spec.id:
@@ -35,6 +36,7 @@ from isaaclab.app import AppLauncher
 
 # local imports
 import cli_args  # isort: skip
+import motion_args  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
@@ -48,6 +50,7 @@ parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy 
 parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
+motion_args.add_motion_args(parser)
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -136,6 +139,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # note: certain randomizations occur in the environment initialization so we set the seed here
     env_cfg.seed = agent_cfg.seed
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    motion_file = motion_args.apply_motion_source_cfg(env_cfg, args_cli)
+    if motion_file is not None:
+        print(f"[INFO]: Using motion file: {motion_file}")
 
     # multi-gpu training configuration
     if args_cli.distributed:
