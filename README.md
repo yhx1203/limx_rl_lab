@@ -33,8 +33,8 @@ isaacsim
 
 **Install limx_rl_lab**
 ```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/yhx1203/limx_rl_lab.git
-cd limx_rl_lab
+git lfs install
+git clone https://github.com/yhx1203/limx_rl_lab.git
 python -m pip install -e source/limx_rl_lab
 ```
 
