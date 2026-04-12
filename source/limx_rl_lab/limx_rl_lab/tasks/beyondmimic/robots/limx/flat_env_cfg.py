@@ -80,6 +80,8 @@ class OliFlatPlayEnvCfg(OliFlatEnvCfg):
         self.scene.num_envs = 32
         self.observations.policy.enable_corruption = False
         self.commands.motion.debug_vis = True
+        self.viewer.origin_type = "asset_root"
+        self.viewer.asset_name = "robot"
 
 
 @configclass
@@ -89,6 +91,8 @@ class OliFlatWoStateEstimationPlayEnvCfg(OliFlatWoStateEstimationEnvCfg):
         self.scene.num_envs = 32
         self.observations.policy.enable_corruption = False
         self.commands.motion.debug_vis = True
+        self.viewer.origin_type = "asset_root"
+        self.viewer.asset_name = "robot"
 
 
 @configclass
@@ -98,3 +102,5 @@ class OliFlatLowFreqPlayEnvCfg(OliFlatLowFreqEnvCfg):
         self.scene.num_envs = 32
         self.observations.policy.enable_corruption = False
         self.commands.motion.debug_vis = True
+        self.viewer.origin_type = "asset_root"
+        self.viewer.asset_name = "robot"

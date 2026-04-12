@@ -267,11 +267,15 @@ class RewardsCfg:
     )
     cross_arm_swing_stance = RewTerm(
         func=mdp.cross_arm_swing_stance,
-        weight=0.25,
+        weight=0.5,
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=["left_wrist_roll_link", "right_wrist_roll_link"]),
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET_BODY_NAMES),
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                body_names=["left_wrist_roll_link", "right_wrist_roll_link"],
+                preserve_order=True,
+            ),
             "command_name": "base_velocity",
+            "period": 0.72,
             "position_scale": 8.0,
         },
     )

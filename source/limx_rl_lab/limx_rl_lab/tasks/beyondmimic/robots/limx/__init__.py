@@ -14,7 +14,7 @@ gym.register(
 )
 
 gym.register(
-    id="LimX-HU-D04-01-Flat-BeyondMimic-Wo-State-Estimation",
+    id="LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={

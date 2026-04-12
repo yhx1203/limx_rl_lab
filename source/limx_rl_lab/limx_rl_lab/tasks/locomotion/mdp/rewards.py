@@ -11,6 +11,8 @@ from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 
+from .observations import gait_phase as gait_phase_obs
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
@@ -160,31 +162,48 @@ def feet_contact_without_cmd(
 
 def cross_arm_swing_stance(
     env: ManagerBasedRLEnv,
-    sensor_cfg: SceneEntityCfg,
     asset_cfg: SceneEntityCfg,
+    period: float,
     command_name: str = "base_velocity",
     command_threshold: float = 0.1,
     position_scale: float = 8.0,
 ) -> torch.Tensor:
-    """Reward contralateral arm swing relative to the body frame."""
-    asset: Articulation = env.scene[asset_cfg.name]
-    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    """Reward contralateral arm swing from the default pose using gait phase."""
+    if not hasattr(env, "episode_length_buf"):
+        env.episode_length_buf = torch.zeros(env.num_envs, device=env.device, dtype=torch.long)
 
-    is_contact = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids] > 0
-    stance_diff = is_contact[:, 0].float() - is_contact[:, 1].float()
+    asset: Articulation = env.scene[asset_cfg.name]
 
     hand_pos_rel_w = asset.data.body_pos_w[:, asset_cfg.body_ids, :] - asset.data.root_pos_w[:, None, :]
     hand_pos_b = torch.zeros(env.num_envs, len(asset_cfg.body_ids), 3, device=env.device)
     for i in range(len(asset_cfg.body_ids)):
         hand_pos_b[:, i, :] = quat_apply_inverse(asset.data.root_quat_w, hand_pos_rel_w[:, i, :])
 
-    left_hand_x = hand_pos_b[:, 0, 0]
-    right_hand_x = hand_pos_b[:, 1, 0]
+    cache_name = "_cross_arm_default_hand_pos_b"
+    if not hasattr(env, cache_name) or getattr(env, cache_name) is None:
+        setattr(env, cache_name, hand_pos_b.detach().clone())
+    default_hand_pos_b = getattr(env, cache_name)
+
+    if tuple(default_hand_pos_b.shape) != tuple(hand_pos_b.shape):
+        default_hand_pos_b = hand_pos_b.detach().clone()
+        setattr(env, cache_name, default_hand_pos_b)
+
+    # Refresh the reference pose at the start of every episode so swing is measured
+    # relative to the nominal arm placement instead of the absolute wrist position.
+    reset_env_ids = torch.nonzero(env.episode_length_buf <= 1, as_tuple=False).squeeze(-1)
+    if reset_env_ids.numel() > 0:
+        default_hand_pos_b[reset_env_ids] = hand_pos_b[reset_env_ids].detach()
+
+    hand_delta_x = hand_pos_b[:, :, 0] - default_hand_pos_b[:, :, 0]
+    left_hand_delta_x = hand_delta_x[:, 0]
+    right_hand_delta_x = hand_delta_x[:, 1]
+
+    phase_signal = gait_phase_obs(env, period=period)[:, 0]
 
     # left stance  -> right hand forward, left hand backward
     # right stance -> left hand forward, right hand backward
-    reward_right_hand = torch.tanh(position_scale * stance_diff * right_hand_x)
-    reward_left_hand = torch.tanh(-position_scale * stance_diff * left_hand_x)
+    reward_right_hand = torch.tanh(position_scale * phase_signal * right_hand_delta_x)
+    reward_left_hand = torch.tanh(-position_scale * phase_signal * left_hand_delta_x)
     reward = 0.5 * (reward_right_hand + reward_left_hand)
 
     cmd_norm = torch.norm(env.command_manager.get_command(command_name), dim=1)

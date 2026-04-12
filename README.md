@@ -75,7 +75,7 @@ tmux attach -t mysession
 ```bash
 python scripts/rsl_rl/play.py   --task LimX-HU-D04-01-Flat-Velocity
 ```
-The following animation shows the learned policy running on flat terrain.
+The following animation shows the learned walk policy running on flat terrain.
 
 ![train_flat_lab](docs/train_flat_lab.gif)
 
@@ -100,26 +100,24 @@ python humanoid-mujoco-sim/simulator.py
 
 **Run in another terminal**
 ```bash
-python deploy/sim2sim/sdk_policy_controller.py --policy your_policy
-
-python deploy/sim2sim/sdk_policy_controller.py --policy /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt
-
 # Use a gamepad for control
-python deploy/sim2sim/gamepad_policy_controller.py --policy your_policy
-
-python deploy/sim2sim/gamepad_policy_controller.py --policy /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt
+python deploy/sim2sim/gamepad_policy_controller.py   --policy limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt   --mimic-policy limx_hu_d04_01_flat_beyondmimic/2026-04-09_17-40-05_walk1_subject1/exported/policy.pt   --mimic-motion-file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
 ```
 
-The following animation shows the learned policy running in MuJoCo on flat terrain.
+The following animation shows the learned walk policy running in MuJoCo on flat terrain.
 
 ![train_flat_mujoco](docs/train_flat_mujoco.gif)
 
-### Default Controller Mapping
+## Controller Operation
 
-- Left stick：`vx / vy`
-- Right stick：`wz`
-- `START`：enable / pause 
-- `BACK`：immediately pause and reset the velocity command to zero
+The current default mode is `walk`, and the system starts in a paused state by default.
+
+- `START`: Start / Pause
+- **Left Stick**: `vx / vy`
+- **Right Stick**: `wz`
+- `BACK`: Pause immediately
+- `R1 + X`: Switch back to `walk`
+- `R1 + A`: Switch to `mimic`
 
 ## Sim2real 
 
@@ -146,7 +144,7 @@ export LIMX_WALK_POLICY=limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-00
 **Run**
 
 ```bash
-cd /home/edy/limx_rl_lab
+cd limx_rl_lab
 export ROBOT_TYPE=HU_D04_01
 python deploy/sim2real/main.py 10.192.1.2
 ```
@@ -156,7 +154,7 @@ python deploy/sim2real/main.py 10.192.1.2
 - `R1 + X`: switch to `walk`
 - `L1 + A`: switch to `damping`
 
-The following animation shows the learned policy running in reality.
+The following animation shows the learned walk policy running in reality.
 
 ![train_flat_real](docs/train_flat_real.gif)
 
@@ -174,7 +172,7 @@ git clone https://github.com/ubisoft/ubisoft-laforge-animation-dataset.git
 
 **View the retargeted motion**
 ```bash
-python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/aiming1_subject1.bvh   --format lafan1   --robot hu_d04  
+python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/walk1_subject1.bvh   --format lafan1   --robot hu_d04 --max_frames 300 
 ```
 
 The following animation shows the retargeted motion running in mujoco.
@@ -183,40 +181,11 @@ The following animation shows the retargeted motion running in mujoco.
 
 **Retarget the motion and save it in CSV format (for BeyondMimic training)**
 ```bash
-python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/aiming1_subject1.bvh   --format lafan1   --robot hu_d04   --no_viewer   --max_frames 300   --save_beyondmimic_csv_path outputs/hu_d04_aiming1_preview_beyondmimic.csv
+python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/walk1_subject1.bvh   --format lafan1   --robot hu_d04   --no_viewer   --max_frames 300   --save_beyondmimic_csv_path outputs/hu_d04_walk1_subject1_beyondmimic.csv
 ```
 
 
 
-## Beyondmimic
-
-**Convert the BeyondMimic CSV to motion npz**
-
-```bash
- python scripts/csv_to_npz.py   --robot oli   --input_file GMR/outputs/hu_d04_aiming1_preview_beyondmimic.csv   --input_fps 30   --output_name hu_d04_aiming1_preview_beyondmimic   --headless
-
-```
-
-**Replay**
-
-```bash
- python scripts/replay_npz.py   --robot oli   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic
-
-```
-
-**Train**
-
-```bash
-python scripts/rsl_rl/train.py   --task=LimX-HU-D04-01-Flat-BeyondMimic   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_aiming1_preview_beyondmimic   --headless   --logger wandb   --log_project_name test_tmp   --run_name oli_aiming1
-
-```
-
-**Evaluate**
-```bash
-python scripts/rsl_rl/play.py --task=LimX-HU-D04-01-Flat-BeyondMimic --num_envs=2 --wandb_path=1155249297-the-chinese-university-of-hong-kong/test_tmp/v5xnw1aa
-# use local mode
-python scripts/rsl_rl/play.py   --task=LimX-HU-D04-01-Flat-BeyondMimic   --num_envs=2   --checkpoint /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_beyondmimic/2026-04-08_14-47-58_oli_aiming1/model_7000.pt  --motion_file /home/edy/limx_rl_lab/motions/hu_d04_aiming1_preview_beyondmimic/motion.npz
-```
 
 ## Citation
 
