@@ -48,6 +48,13 @@ python scripts/list_envs.py
 # Start training
 python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless
 
+python scripts/rsl_rl/train.py \
+  --task LimX-HU-D04-01-Rough-Velocity \
+  --headless \
+  --init_checkpoint /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-04-13_12-37-44/model_4500.pt \
+  --run_name rough-ft-001
+
+
 # Resume training from the latest checkpoint
 python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless --resume
 ```
@@ -209,6 +216,8 @@ python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/la
 The following animation shows the retargeted motion running in Isaac Sim.
 
 ![retarget_lab](docs/retarget_lab.gif)
+
+
 
 
 

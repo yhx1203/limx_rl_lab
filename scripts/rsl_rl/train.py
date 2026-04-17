@@ -142,7 +142,13 @@ def load_init_checkpoint(runner: OnPolicyRunner, checkpoint_path: str):
     if not isinstance(model_state_dict, dict):
         raise ValueError(f"Checkpoint at {checkpoint_path} does not contain a model state dict.")
 
-    current_state_dict = runner.alg.actor_critic.state_dict()
+    policy = getattr(runner.alg, "policy", None)
+    if policy is None:
+        policy = getattr(runner.alg, "actor_critic", None)
+    if policy is None:
+        raise AttributeError("Unable to locate policy module on runner.alg for warm-start loading.")
+
+    current_state_dict = policy.state_dict()
     matched_state_dict = {}
     skipped_keys = []
 
@@ -152,7 +158,7 @@ def load_init_checkpoint(runner: OnPolicyRunner, checkpoint_path: str):
         else:
             skipped_keys.append(key)
 
-    runner.alg.actor_critic.load_state_dict(matched_state_dict, strict=False)
+    policy.load_state_dict(matched_state_dict, strict=False)
 
     print(
         "[INFO]: Warm-started actor-critic with "
