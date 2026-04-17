@@ -100,6 +100,9 @@ python humanoid-mujoco-sim/simulator.py
 
 **Run in another terminal**
 ```bash
+python deploy/sim2sim/sdk_policy_controller.py   --policy limx_hu_d04_01_flat_velocity/2026-04-13_12-37-44/exported/policy.pt   --lin-vel-x 0.3   --lin-vel-y 0.0   --ang-vel-z 0.0
+
+
 # Use a gamepad for control
 python deploy/sim2sim/gamepad_policy_controller.py   --policy limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt   --mimic-policy limx_hu_d04_01_flat_beyondmimic/2026-04-09_17-40-05_walk1_subject1/exported/policy.pt   --mimic-motion-file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
 ```
@@ -184,6 +187,28 @@ The following animation shows the retargeted motion running in mujoco.
 python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/lafan1/lafan1/walk1_subject1.bvh   --format lafan1   --robot hu_d04   --no_viewer   --max_frames 300   --save_beyondmimic_csv_path outputs/hu_d04_walk1_subject1_beyondmimic.csv
 ```
 
+
+
+## Beyondmimic
+
+**Convert the BeyondMimic CSV to motion npz**
+
+```bash
+ python scripts/csv_to_npz.py   --robot oli   --input_file GMR/outputs/hu_d04_walk1_subject1_beyondmimic.csv   --input_fps 30   --output_name hu_d04_walk1_subject1_beyondmimic   --headless  --skip_wandb
+
+```
+
+**Replay**
+
+```bash
+ python scripts/replay_npz.py   --robot oli   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic
+
+# local
+ python scripts/replay_npz.py   --robot oli   --motion_file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
+```
+The following animation shows the retargeted motion running in Isaac Sim.
+
+![retarget_lab](docs/retarget_lab.gif)
 
 
 

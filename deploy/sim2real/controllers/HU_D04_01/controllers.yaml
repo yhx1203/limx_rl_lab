@@ -18,6 +18,14 @@ abilities:
       update_rate: 1000
     }
 
+  mimic:
+    type: "mimic/controller"
+    script_path: "mimic_controller/mimic_controller.py"
+    autostart: false
+    config: {
+      update_rate: 1000
+    }
+
   damping:
     type: "damping/controller"
     script_path: "damping_controller/damping_controller.py"

@@ -23,16 +23,19 @@ def switch_ability(stop_list: str, start_name: str) -> None:
 
 def sensor_joy_callback(sensor_joy: datatypes.SensorJoy) -> None:
     if sensor_joy.buttons[4] == 1 and sensor_joy.buttons[3] == 1:
-        switch_ability("walk damping", "stand")
+        switch_ability("mimic damping walk", "stand")
+
+    if sensor_joy.buttons[4] == 1 and sensor_joy.buttons[1] == 1:
+        switch_ability("stand damping walk", "mimic")
 
     if sensor_joy.buttons[7] == 1 and sensor_joy.buttons[2] == 1:
-        switch_ability("stand damping", "walk")
+        switch_ability("stand damping mimic", "walk")
 
     if sensor_joy.buttons[4] == 1 and sensor_joy.buttons[0] == 1:
-        switch_ability("stand walk", "damping")
+        switch_ability("stand mimic walk", "damping")
 
     if sensor_joy.buttons[4] == 1 and sensor_joy.buttons[2] == 1:
-        switch_ability("stand walk damping", "")
+        switch_ability("stand mimic damping walk", "")
 
 
 if __name__ == "__main__":

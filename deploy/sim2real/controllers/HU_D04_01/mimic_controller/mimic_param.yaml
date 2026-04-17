@@ -1,0 +1,9 @@
+policy_root: "logs/rsl_rl"
+policy_path: "limx_hu_d04_01_flat_beyondmimic/2026-04-09_17-40-05_walk1_subject1/exported/policy.pt"
+motion_file: "motions/hu_d04_walk1_subject1_beyondmimic/motion.npz"
+robot_xml: "source/limx_rl_lab/data/Robots/limx/HU_D04_description/xml/HU_D04_01.xml"
+
+reference_yaw_offset_deg: 0.0
+align_heading_on_switch: true
+clip_observations: 100.0
+clip_actions: 100.0

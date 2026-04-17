@@ -48,6 +48,12 @@ parser.add_argument("--task", type=str, default=None, choices=tasks, help="Name 
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
 parser.add_argument(
+    "--init_checkpoint",
+    type=str,
+    default=None,
+    help="Initialize training from a checkpoint path without using resume semantics.",
+)
+parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 motion_args.add_motion_args(parser)
@@ -57,6 +63,9 @@ cli_args.add_rsl_rl_args(parser)
 AppLauncher.add_app_launcher_args(parser)
 argcomplete.autocomplete(parser)
 args_cli, hydra_args = parser.parse_known_args()
+
+if args_cli.resume and args_cli.init_checkpoint is not None:
+    raise ValueError("Use either --resume or --init_checkpoint, not both.")
 
 # always enable cameras to record video
 if args_cli.video:
@@ -110,6 +119,7 @@ from isaaclab.envs import (
     ManagerBasedRLEnvCfg,
     multi_agent_to_single_agent,
 )
+from isaaclab.utils.assets import retrieve_file_path
 from isaaclab.utils.dict import print_dict
 from isaaclab.utils.io import dump_yaml
 from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper
@@ -123,6 +133,35 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
+
+
+def load_init_checkpoint(runner: OnPolicyRunner, checkpoint_path: str):
+    """Load matching actor-critic weights from a checkpoint for warm-start finetuning."""
+    loaded_dict = torch.load(checkpoint_path, map_location="cpu")
+    model_state_dict = loaded_dict.get("model_state_dict", loaded_dict)
+    if not isinstance(model_state_dict, dict):
+        raise ValueError(f"Checkpoint at {checkpoint_path} does not contain a model state dict.")
+
+    current_state_dict = runner.alg.actor_critic.state_dict()
+    matched_state_dict = {}
+    skipped_keys = []
+
+    for key, value in model_state_dict.items():
+        if key in current_state_dict and current_state_dict[key].shape == value.shape:
+            matched_state_dict[key] = value
+        else:
+            skipped_keys.append(key)
+
+    runner.alg.actor_critic.load_state_dict(matched_state_dict, strict=False)
+
+    print(
+        "[INFO]: Warm-started actor-critic with "
+        f"{len(matched_state_dict)} matched tensors; skipped {len(skipped_keys)} mismatched tensors."
+    )
+    if skipped_keys:
+        preview = ", ".join(skipped_keys[:8])
+        suffix = "..." if len(skipped_keys) > 8 else ""
+        print(f"[INFO]: Skipped checkpoint tensors: {preview}{suffix}")
 
 
 @hydra_task_config(args_cli.task, "rsl_rl_cfg_entry_point")
@@ -173,8 +212,11 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         env = multi_agent_to_single_agent(env)
 
     # save resume path before creating a new log_dir
+    init_checkpoint_path = None
     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
         resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+    elif args_cli.init_checkpoint is not None:
+        init_checkpoint_path = retrieve_file_path(args_cli.init_checkpoint)
 
     # wrap for video recording
     if args_cli.video:
@@ -200,6 +242,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
         # load previously trained model
         runner.load(resume_path)
+    elif init_checkpoint_path is not None:
+        print(f"[INFO]: Initializing model checkpoint from: {init_checkpoint_path}")
+        load_init_checkpoint(runner, init_checkpoint_path)
 
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)

@@ -96,6 +96,27 @@ def feet_stumble(env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg) -> torch.Te
     return reward
 
 
+def feet_air_time_positive_biped(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    threshold: float,
+    sensor_cfg: SceneEntityCfg,
+) -> torch.Tensor:
+    """Reward alternating single-stance phases for bipeds."""
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+
+    air_time = contact_sensor.data.current_air_time[:, sensor_cfg.body_ids]
+    contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]
+    in_contact = contact_time > 0.0
+    in_mode_time = torch.where(in_contact, contact_time, air_time)
+    single_stance = torch.sum(in_contact.int(), dim=1) == 1
+
+    reward = torch.min(torch.where(single_stance.unsqueeze(-1), in_mode_time, 0.0), dim=1)[0]
+    reward = torch.clamp(reward, max=threshold)
+    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    return reward
+
+
 def feet_height_body(
     env: ManagerBasedRLEnv,
     command_name: str,
@@ -131,6 +152,36 @@ def foot_clearance_reward(
     foot_velocity_tanh = torch.tanh(tanh_mult * torch.norm(asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :2], dim=2))
     reward = foot_z_target_error * foot_velocity_tanh
     return torch.exp(-torch.sum(reward, dim=1) / std)
+
+
+def foot_clearance_reward_humanoid(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg,
+    target_height: float,
+    std: float,
+    tanh_mult: float,
+    foot_scanner_cfgs: list[SceneEntityCfg] | None = None,
+) -> torch.Tensor:
+    """Reward swing feet reaching a target height relative to the local terrain."""
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    foot_pos_w = asset.data.body_pos_w[:, asset_cfg.body_ids, :]
+    num_feet = foot_pos_w.shape[1]
+
+    if foot_scanner_cfgs is not None:
+        terrain_h = torch.stack(
+            [env.scene.sensors[scanner_cfg.name].data.ray_hits_w[:, 0, 2] for scanner_cfg in foot_scanner_cfgs],
+            dim=1,
+        )
+    else:
+        terrain_h = env.scene.terrain.env_origins[:, 2].unsqueeze(1).expand(-1, num_feet)
+
+    current_relative_h = foot_pos_w[:, :, 2] - terrain_h
+    foot_vel_xy = torch.norm(asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :2], dim=2)
+    swing_mask = torch.tanh(tanh_mult * foot_vel_xy)
+    height_error = torch.square(current_relative_h - target_height)
+
+    return torch.exp(-torch.sum(height_error * swing_mask, dim=1) / std)
 
 
 def feet_too_near(
