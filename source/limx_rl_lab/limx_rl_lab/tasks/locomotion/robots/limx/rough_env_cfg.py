@@ -30,7 +30,7 @@ LIMX_ROUGH_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
     sub_terrains={
         "pyramid_stairs": terrain_gen.MeshPyramidStairsTerrainCfg(
             proportion=0.2,
-            step_height_range=(0.05, 0.23),
+            step_height_range=(0.05, 0.18),
             step_width=0.3,
             platform_width=3.0,
             border_width=1.0,
@@ -38,7 +38,7 @@ LIMX_ROUGH_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
         ),
         "pyramid_stairs_inv": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
             proportion=0.2,
-            step_height_range=(0.05, 0.23),
+            step_height_range=(0.05, 0.18),
             step_width=0.3,
             platform_width=3.0,
             border_width=1.0,
@@ -94,7 +94,7 @@ LIMX_ROUGH_PLAY_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
         ),
         "pyramid_stairs": terrain_gen.MeshPyramidStairsTerrainCfg(
             proportion=1.0,
-            step_height_range=(0.05, 0.23),
+            step_height_range=(0.05, 0.18),
             step_width=0.3,
             platform_width=3.0,
             border_width=0.0,
@@ -102,7 +102,7 @@ LIMX_ROUGH_PLAY_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
         ),
         "pyramid_stairs_inv": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
             proportion=1.0,
-            step_height_range=(0.05, 0.23),
+            step_height_range=(0.05, 0.18),
             step_width=0.3,
             platform_width=3.0,
             border_width=0.0,
@@ -127,7 +127,7 @@ class RoughRobotSceneCfg(RobotSceneCfg):
         prim_path="/World/ground",
         terrain_type="generator",
         terrain_generator=LIMX_ROUGH_TERRAINS_CFG,
-        max_init_terrain_level=5,
+        max_init_terrain_level=0,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="multiply",
@@ -274,7 +274,7 @@ class RoughRewardsCfg:
         params={
             "std": 0.05,
             "tanh_mult": 2.0,
-            "target_height": 0.12,
+            "target_height": 0.16,
             "asset_cfg": SceneEntityCfg("robot", body_names=FEET_BODY_NAMES, preserve_order=True),
             "foot_scanner_cfgs": [
                 SceneEntityCfg("foot_scanner_l"),
@@ -330,6 +330,8 @@ class RoughTerminationsCfg:
 @configclass
 class RoughCurriculumCfg:
     terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
+    lin_vel_cmd_levels = CurrTerm(func=mdp.lin_vel_cmd_levels)
+    ang_vel_cmd_levels = CurrTerm(func=mdp.ang_vel_cmd_levels)
 
 
 @configclass
@@ -370,9 +372,9 @@ class RoughRobotEnvCfg(RobotEnvCfg):
 
         self.actions.JointPositionAction.scale = 0.25
 
-        self.commands.base_velocity.ranges.lin_vel_x = (0.0, 1.0)
-        self.commands.base_velocity.ranges.lin_vel_y = (-0.5, 0.5)
-        self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.3)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.1, 0.1)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.2, 0.2)
 
         self.disable_zero_weight_rewards()
 

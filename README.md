@@ -217,6 +217,60 @@ The following animation shows the retargeted motion running in Isaac Sim.
 
 ![retarget_lab](docs/retarget_lab.gif)
 
+**Train**
+
+```bash
+python scripts/rsl_rl/train.py   --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic   --headless   --logger wandb   --log_project_name test_tmp   --run_name oli_walk1_subject1
+
+# continue
+python scripts/rsl_rl/train.py \
+  --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation \
+  --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic1 \
+  --headless \
+  --logger wandb \
+  --log_project_name test_tmp \
+  --run_name oli_walk1_subject11_resume \
+  --resume \
+  --load_run 2026-04-09_17-40-05_oli_walk1_subject11 \
+  --checkpoint model_11500.pt \
+  --max_iterations 18500
+
+# local 
+python scripts/rsl_rl/train.py   --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation   --motion_file motions/hu_d04_walk1_subject11_beyondmimic/motion.npz   --headless   --logger tensorboard   --run_name oli_walk1_subject11
+
+
+```
+
+
+
+**Evaluate**
+```bash
+python scripts/rsl_rl/play.py --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation --num_envs=1 --wandb_path=1155249297-the-chinese-university-of-hong-kong/test_tmp/v5xnw1aa
+# use local mode
+python scripts/rsl_rl/play.py   --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation   --num_envs=1   --checkpoint logs/rsl_rl/limx_hu_d04_01_flat_beyondmimic/2026-04-09_17-40-05_walk1_subject1/model_11500.pt  --motion_file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
+```
+
+The following animation shows the learned mimic policy in Isaac Sim
+
+![mimic_play](docs/mimic_play.gif)
+
+The following animation shows the learned mimic policy in mujoco
+
+![mimic_mujoco](docs/mimic_mujoco.gif)
+
+**sim2real**
+```bash
+export ROBOT_TYPE=HU_D04_01
+export LIMX_POLICY_ROOT=/home/edy/limx_rl_lab/logs/rsl_rl
+export LIMX_WALK_POLICY=limx_hu_d04_01_flat_velocity/2026-04-03_11-35-05_flat-004/exported/policy.pt
+
+python deploy/sim2real/gamepad_policy_controller.py 10.192.1.2
+
+
+python deploy/sim2real/gamepad_policy_controller.py 10.192.1.2 \
+--mimic-policy limx_hu_d04_01_flat_beyondmimic/2026-04-09_17-40-05_walk1_subject1/exported/policy.pt \
+--mimic-motion-file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
+```
 
 
 
