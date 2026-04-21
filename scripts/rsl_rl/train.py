@@ -20,12 +20,13 @@ sys.path.pop(0)
 tasks = []
 for task_spec in gym.registry.values():
     env_cfg_entry_point = str(task_spec.kwargs.get("env_cfg_entry_point", ""))
+    has_rsl_rl_cfg = task_spec.kwargs.get("rsl_rl_cfg_entry_point") is not None
     is_local_limx_rl_lab_task = (
         env_cfg_entry_point.startswith("locomotion.")
         or env_cfg_entry_point.startswith("beyondmimic.")
         or "limx_rl_lab.tasks" in env_cfg_entry_point
     )
-    if is_local_limx_rl_lab_task and "Isaac" not in task_spec.id:
+    if is_local_limx_rl_lab_task and has_rsl_rl_cfg and "Isaac" not in task_spec.id:
         tasks.append(task_spec.id)
 
 import argparse

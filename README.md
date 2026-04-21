@@ -48,12 +48,6 @@ python scripts/list_envs.py
 # Start training
 python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless
 
-python scripts/rsl_rl/train.py \
-  --task LimX-HU-D04-01-Rough-Velocity \
-  --headless \
-  --init_checkpoint /home/edy/limx_rl_lab/logs/rsl_rl/limx_hu_d04_01_flat_velocity/2026-04-13_12-37-44/model_4500.pt \
-  --run_name rough-ft-001
-
 
 # Resume training from the latest checkpoint
 python scripts/rsl_rl/train.py --task LimX-HU-D04-01-Flat-Velocity --headless --resume
@@ -163,6 +157,7 @@ python deploy/sim2real/main.py 10.192.1.2
 - `L1 + Y`: switch to `stand`
 - `R1 + X`: switch to `walk`
 - `L1 + A`: switch to `damping`
+- `L1 + B`: switch to `mimic`
 
 The following animation shows the learned walk policy running in reality.
 
@@ -201,23 +196,62 @@ python scripts/bvh_to_robot.py   --bvh_file ubisoft-laforge-animation-dataset/la
 **Convert the BeyondMimic CSV to motion npz**
 
 ```bash
- python scripts/csv_to_npz.py   --robot oli   --input_file GMR/outputs/hu_d04_walk1_subject1_beyondmimic.csv   --input_fps 30   --output_name hu_d04_walk1_subject1_beyondmimic   --headless  --skip_wandb
+python scripts/csv_to_npz.py   --robot oli   --input_file GMR/outputs/hu_d04_walk1_subject1_beyondmimic.csv   --input_fps 30   --output_name hu_d04_walk1_subject1_beyondmimic   --headless  --skip_wandb
 
 ```
 
 **Replay**
 
 ```bash
- python scripts/replay_npz.py   --robot oli   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic
+python scripts/replay_npz.py   --robot oli   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic
 
 # local
- python scripts/replay_npz.py   --robot oli   --motion_file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
+python scripts/replay_npz.py   --robot oli   --motion_file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
 ```
 The following animation shows the retargeted motion running in Isaac Sim.
 
 ![retarget_lab](docs/retarget_lab.gif)
 
+**Train**
 
+```bash
+python scripts/rsl_rl/train.py   --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation   --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic   --headless   --logger wandb   --log_project_name test_tmp   --run_name oli_walk1_subject1
+
+# continue
+python scripts/rsl_rl/train.py \
+  --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation \
+  --registry_name 1155249297-the-chinese-university-of-hong-kong-org/wandb-registry-motions/hu_d04_walk1_subject1_beyondmimic1 \
+  --headless \
+  --logger wandb \
+  --log_project_name test_tmp \
+  --run_name oli_walk1_subject11_resume \
+  --resume \
+  --load_run 2026-04-09_17-40-05_oli_walk1_subject11 \
+  --checkpoint model_11500.pt \
+  --max_iterations 18500
+
+# local 
+python scripts/rsl_rl/train.py   --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation   --motion_file motions/hu_d04_walk1_subject11_beyondmimic/motion.npz   --headless   --logger tensorboard   --run_name oli_walk1_subject11
+```
+
+
+**Evaluate**
+```bash
+python scripts/rsl_rl/play.py --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation --num_envs=1 --wandb_path=1155249297-the-chinese-university-of-hong-kong/test_tmp/v5xnw1aa
+# use local mode
+python scripts/rsl_rl/play.py   --task=LimX-HU-D04-01-Flat-BeyondMimic-No-State-Estimation   --num_envs=1   --checkpoint logs/rsl_rl/limx_hu_d04_01_flat_beyondmimic/2026-04-09_17-40-05_walk1_subject1/model_11500.pt  --motion_file motions/hu_d04_walk1_subject1_beyondmimic/motion.npz
+```
+
+The following animation shows the learned mimic policy in Isaac Sim
+
+![mimic_play](docs/mimic_play.gif)
+
+
+**sim2real**
+```bash
+export ROBOT_TYPE=HU_D04_01
+python deploy/sim2real/main.py 10.192.1.2
+```
 
 
 

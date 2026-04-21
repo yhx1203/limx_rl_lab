@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 def add_motion_args(parser: argparse.ArgumentParser):
-    """Add optional BeyondMimic motion-source arguments."""
-    parser.add_argument("--motion_file", type=str, default=None, help="Path to a BeyondMimic motion npz file.")
+    """Add optional motion-source arguments."""
+    parser.add_argument("--motion_file", type=str, default=None, help="Path to a motion npz file.")
     parser.add_argument(
         "--registry_name",
         type=str,
@@ -21,9 +21,11 @@ def _is_missing(value) -> bool:
 
 
 def apply_motion_source_cfg(env_cfg, args_cli: argparse.Namespace) -> str | None:
-    """Apply a motion npz source to env configs that expose commands.motion.motion_file."""
-    commands_cfg = getattr(env_cfg, "commands", None)
-    motion_cfg = getattr(commands_cfg, "motion", None)
+    """Apply a motion npz source to env configs that expose a ``motion_file`` field."""
+    motion_cfg = env_cfg if hasattr(env_cfg, "motion_file") else None
+    if motion_cfg is None:
+        commands_cfg = getattr(env_cfg, "commands", None)
+        motion_cfg = getattr(commands_cfg, "motion", None)
     if motion_cfg is None or not hasattr(motion_cfg, "motion_file"):
         return None
 
@@ -53,8 +55,8 @@ def apply_motion_source_cfg(env_cfg, args_cli: argparse.Namespace) -> str | None
 
     if _is_missing(motion_cfg.motion_file):
         raise ValueError(
-            "This BeyondMimic task requires a motion source. Provide --motion_file /path/to/motion.npz, "
-            "--registry_name <wandb-artifact>, or a Hydra override for commands.motion.motion_file."
+            "This task requires a motion source. Provide --motion_file /path/to/motion.npz, "
+            "--registry_name <wandb-artifact>, or a Hydra override for motion_file / commands.motion.motion_file."
         )
 
     motion_path = Path(str(motion_cfg.motion_file)).expanduser()

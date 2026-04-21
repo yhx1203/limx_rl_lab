@@ -58,7 +58,7 @@ def _walk_packages(
 
 def import_packages():
     sys.path.insert(0, f"{pathlib.Path(__file__).parent.parent}/source/limx_rl_lab/limx_rl_lab/tasks/")
-    for package in ["locomotion.robots", "beyondmimic.robots"]:
+    for package in ["locomotion.robots", "beyondmimic.robots", "amp.robots"]:
         package = importlib.import_module(package)
         for _ in _walk_packages(package.__path__, package.__name__ + "."):
             pass
