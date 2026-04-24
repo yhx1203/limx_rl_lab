@@ -16,8 +16,8 @@ gym.register(
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.velocity_env_cfg:RobotNoGaitPhaseEnvCfg",
-        "play_env_cfg_entry_point": f"{__name__}.velocity_env_cfg:RobotNoGaitPhasePlayEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.velocity_no_gait_env_cfg:RobotNoGaitPhaseEnvCfg",
+        "play_env_cfg_entry_point": f"{__name__}.velocity_no_gait_env_cfg:RobotNoGaitPhasePlayEnvCfg",
         "rsl_rl_cfg_entry_point": "limx_rl_lab.tasks.locomotion.agents.rsl_rl_ppo_cfg:BasePPORunnerCfg",
     },
 )

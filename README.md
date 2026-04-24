@@ -35,6 +35,10 @@ isaacsim
 ```bash
 git lfs install
 git clone https://github.com/yhx1203/limx_rl_lab.git
+```
+
+```bash
+cd limx_rl_lab
 python -m pip install -e source/limx_rl_lab
 ```
 
