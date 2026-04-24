@@ -246,6 +246,9 @@ The following animation shows the learned mimic policy in Isaac Sim
 
 ![mimic_play](docs/mimic_play.gif)
 
+The following animation shows the learned mimic policy in mujoco
+
+![mimic_mujoco](docs/mimic_mujoco.gif)
 
 **sim2real**
 ```bash

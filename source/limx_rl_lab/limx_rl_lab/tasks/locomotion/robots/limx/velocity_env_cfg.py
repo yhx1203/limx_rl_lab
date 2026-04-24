@@ -220,6 +220,32 @@ class ObservationsCfg:
 
 
 @configclass
+class NoGaitPhaseObservationsCfg(ObservationsCfg):
+    """Observation specifications without gait phase and with history."""
+
+    @configclass
+    class PolicyCfg(ObservationsCfg.PolicyCfg):
+        """Observations for policy group."""
+
+        def __post_init__(self):
+            super().__post_init__()
+            self.gait_phase = None
+            self.history_length = 5
+
+    policy: PolicyCfg = PolicyCfg()
+
+    @configclass
+    class CriticCfg(ObservationsCfg.CriticCfg):
+        """Observations for critic group."""
+
+        def __post_init__(self):
+            self.gait_phase = None
+            self.history_length = 5
+
+    critic: CriticCfg = CriticCfg()
+
+
+@configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
 
@@ -419,6 +445,25 @@ class RobotEnvCfg(ManagerBasedRLEnvCfg):
 
 @configclass
 class RobotPlayEnvCfg(RobotEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 32
+        self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
+
+
+@configclass
+class RobotNoGaitPhaseEnvCfg(RobotEnvCfg):
+    """Flat velocity task without gait phase observations or cross-arm swing reward."""
+
+    observations: NoGaitPhaseObservationsCfg = NoGaitPhaseObservationsCfg()
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.rewards.cross_arm_swing_stance = None
+
+
+@configclass
+class RobotNoGaitPhasePlayEnvCfg(RobotNoGaitPhaseEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 32
