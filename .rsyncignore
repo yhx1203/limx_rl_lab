@@ -1,0 +1,52 @@
+# Documentation
+docs/
+
+# Training/runtime outputs
+logs/
+outputs/
+outpus/
+output/
+runs/
+videos/
+recordings/
+wandb/
+artifacts/
+.neptune/
+
+# Python cache and test cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Build/cache directories
+build/
+cmake-build*/
+_build/
+_repo/
+_isaac_sim*/
+.thumbs/
+
+# Temporary and crash files
+*.tmp
+*.log
+*.log*
+*.dmp
+.DS_Store
+
+# Large generated model/export files
+*.pt
+*.pb
+*.npz
+*.obj
+*.mtl
+*.sif
+
+# IDE/local metadata
+.idea/
+.vscode/
+.codex/
+
+# Optional: uncomment if you do not need git history on the server.
+# .git/
